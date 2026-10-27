@@ -1,0 +1,66 @@
+name: CI and Deploy
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SOCKET_URL: ${{ vars.VITE_SOCKET_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            client/package-lock.json
+            server/package-lock.json
+
+      - name: Install and verify client
+        working-directory: client
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+
+      - name: Install and verify server
+        working-directory: server
+        run: |
+          npm ci
+          node --check server.js
+
+      - name: Build Docker images
+        run: |
+          docker build --tag moviehouse-api:ci ./server
+          docker build --build-arg VITE_SOCKET_URL="${VITE_SOCKET_URL:-http://localhost:5001}" --tag moviehouse-client:ci ./client
+
+      - name: Deploy frontend to Netlify
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ] || [ -z "$NETLIFY_SITE_ID" ] || [ -z "$VITE_SOCKET_URL" ]; then
+            echo "Skipping Netlify deploy: configure NETLIFY_AUTH_TOKEN, NETLIFY_SITE_ID, and VITE_SOCKET_URL."
+            exit 0
+          fi
+          npx --yes netlify-cli deploy --prod --dir=client/dist --site="$NETLIFY_SITE_ID"
+
+      - name: Trigger Render deployment
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "Skipping Render deploy: configure RENDER_DEPLOY_HOOK_URL."
+            exit 0
+          fi
+          curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK_URL"
