@@ -1,43 +1,33 @@
-const Hero = () => {
+const Hero = ({ featuredMovie, onBook }) => {
     return (
         <section
             id="home"
-            className="bg-slate-950 px-6 py-24 md:py-32"
+            className="hero-section"
+            style={{ "--hero-image": `url("${featuredMovie?.image || ""}")` }}
         >
-
-            <div className="mx-auto max-w-7xl">
-
-                <p className="mb-4 font-semibold uppercase tracking-widest text-red-500">
-                    Movie Ticket Booking
+            <div className="hero-copy">
+                <p className="eyebrow hero-eyebrow"><span /> A little more cinema in your life</p>
+                <h1>Make tonight<br />a <em>movie night.</em></h1>
+                <p className="hero-description">
+                    Find the film you’ll be talking about tomorrow. Choose a theatre and showtime, and let the outside world wait.
                 </p>
-
-                <h1 className="max-w-4xl text-5xl font-extrabold leading-tight md:text-7xl">
-                    Your movie night
-                    <span className="text-red-500"> starts here.</span>
-                </h1>
-
-                <p className="mt-6 max-w-2xl text-lg leading-8 text-gray-400">
-                    Discover movies, choose your theatre, select your
-                    favourite seats and book your tickets in seconds.
-                </p>
-
-                <div className="mt-8 flex flex-wrap gap-4">
-
-                    <a
-                        href="#movies"
-                        className="rounded-lg bg-red-600 px-6 py-3 font-semibold hover:bg-red-700"
-                    >
-                        Browse Movies
-                    </a>
-
-                    <button className="rounded-lg border border-white/20 px-6 py-3 font-semibold hover:bg-white/10">
-                        Select City
-                    </button>
-
+                <div className="hero-actions">
+                    <a className="button-primary" href="#movies">Explore films <span aria-hidden="true">↓</span></a>
+                    {featuredMovie && (
+                        <button className="button-quiet" onClick={() => onBook(featuredMovie)} type="button">
+                            Featured: {featuredMovie.title} <span aria-hidden="true">↗</span>
+                        </button>
+                    )}
                 </div>
-
+                <div className="hero-meta">
+                    <span>01 — 12</span>
+                    <span>Curated for the big screen</span>
+                </div>
             </div>
-
+            <div className="hero-side-note" aria-hidden="true">
+                <span>NOW SHOWING</span>
+                <span>{featuredMovie?.title || "MovieHouse"}</span>
+            </div>
         </section>
     );
 };

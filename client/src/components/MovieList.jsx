@@ -1,3 +1,4 @@
+import { useState } from "react";
 import MovieCard from "./MovieCard";
 
 const MovieList = ({
@@ -7,85 +8,75 @@ const MovieList = ({
     setSearchQuery,
     loading
 }) => {
+    const [selectedGenre, setSelectedGenre] = useState("All films");
+    const genres = ["All films", ...new Set(movies.map((movie) => movie.genre))];
+    const searchedMovies = movies.filter((movie) =>
+        movie.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    const visibleMovies = selectedGenre === "All films"
+        ? searchedMovies
+        : searchedMovies.filter((movie) => movie.genre === selectedGenre);
 
     return (
         <section
             id="movies"
-            className="bg-slate-950 px-6 py-20"
+            className="movie-section"
         >
-
-            <div className="mx-auto max-w-7xl">
-
-                <div className="mb-8">
-
-                    <p className="font-semibold uppercase tracking-widest text-red-500">
-                        Now Showing
-                    </p>
-
-                    <h2 className="mt-2 text-4xl font-bold">
-                        Movies
-                    </h2>
-
-                    <p className="mt-3 text-gray-400">
-                        Search and select a movie to book tickets.
-                    </p>
-
+            <div className="movie-inner">
+                <div className="movie-heading">
+                    <div>
+                        <p className="eyebrow">A picture-house edit</p>
+                        <h2>Now showing<span>.</span></h2>
+                        <p>Find your next favorite from this week’s lineup.</p>
+                    </div>
+                    <span className="movie-count">{visibleMovies.length.toString().padStart(2, "0")} FILMS</span>
                 </div>
 
-                {/* Search */}
-                <div className="mb-10 max-w-xl">
-
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) =>
-                            setSearchQuery(e.target.value)
-                        }
-                        placeholder="Search movies..."
-                        className="w-full rounded-xl border border-white/10 bg-slate-900 px-5 py-4 text-white outline-none placeholder:text-gray-500 focus:border-red-500"
-                    />
-
-                </div>
-
-                {/* Loading */}
-                {loading && (
-                    <p className="text-gray-400">
-                        Loading movies...
-                    </p>
-                )}
-
-                {/* Movies */}
-                {!loading && movies.length > 0 && (
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-
-                        {movies.map((movie) => (
-                            <MovieCard
-                                key={movie.id}
-                                movie={movie}
-                                onBook={onBook}
-                            />
+                <div className="movie-tools">
+                    <label className="movie-search">
+                        <span className="search-glyph" aria-hidden="true">⌕</span>
+                        <span className="sr-only">Search films</span>
+                        <input
+                            type="search"
+                            value={searchQuery}
+                            onChange={(event) => setSearchQuery(event.target.value)}
+                            placeholder="Search by title..."
+                        />
+                    </label>
+                    <div className="genre-rail" aria-label="Filter by genre">
+                        {genres.map((genre) => (
+                            <button
+                                aria-pressed={selectedGenre === genre}
+                                className={selectedGenre === genre ? "active" : ""}
+                                key={genre}
+                                onClick={() => setSelectedGenre(genre)}
+                                type="button"
+                            >
+                                {genre}
+                            </button>
                         ))}
+                    </div>
+                </div>
 
+                {loading && (
+                    <p className="movie-empty">Loading the lineup…</p>
+                )}
+
+                {!loading && visibleMovies.length > 0 && (
+                    <div className="movie-grid">
+                        {visibleMovies.map((movie) => (
+                            <MovieCard key={movie.id} movie={movie} onBook={onBook} />
+                        ))}
                     </div>
                 )}
 
-                {/* No results */}
-                {!loading && movies.length === 0 && (
-                    <div className="rounded-xl border border-white/10 bg-slate-900 p-10 text-center">
-
-                        <h3 className="text-xl font-semibold">
-                            No movies found
-                        </h3>
-
-                        <p className="mt-2 text-gray-400">
-                            Try searching for another movie.
-                        </p>
-
+                {!loading && visibleMovies.length === 0 && (
+                    <div className="movie-empty">
+                        <h3>No films found.</h3>
+                        <p>Try another title or genre.</p>
                     </div>
                 )}
-
             </div>
-
         </section>
     );
 };

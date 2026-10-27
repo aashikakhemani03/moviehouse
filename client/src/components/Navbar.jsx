@@ -1,51 +1,32 @@
-const Navbar = () => {
+const Navbar = ({ currentUser, onLogin, onSignup, onSignOut }) => {
     return (
-        <nav className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/95 backdrop-blur">
+        <nav className="site-nav">
+            <div className="nav-inner">
+                <a className="brand-lockup" href="#home" aria-label="MovieHouse home">
+                    Movie<span>House</span>
+                    <i aria-hidden="true">®</i>
+                </a>
 
-            <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-
-                <h1 className="text-2xl font-bold">
-                    Movie<span className="text-red-500">House</span>
-                </h1>
-
-                <div className="hidden gap-8 md:flex">
-
-                    <a
-                        href="#home"
-                        className="text-gray-300 hover:text-white"
-                    >
-                        Home
-                    </a>
-
-                    <a
-                        href="#movies"
-                        className="text-gray-300 hover:text-white"
-                    >
-                        Movies
-                    </a>
-
-                    <a
-                        href="#theatres"
-                        className="text-gray-300 hover:text-white"
-                    >
-                        Theatres
-                    </a>
-
-                    <a
-                        href="#bookings"
-                        className="text-gray-300 hover:text-white"
-                    >
-                        My Bookings
-                    </a>
-
+                <div className="nav-links">
+                    <a href="#home">Discover</a>
+                    <a href="#movies">Now showing</a>
+                    <a href="#theatres">Theatres</a>
                 </div>
 
-                <button className="rounded-lg bg-red-600 px-5 py-2 font-semibold hover:bg-red-700">
-                    Login
-                </button>
-
+                <div className="nav-account">
+                    {currentUser ? (
+                        <>
+                            <span className="nav-greeting">Hi, {currentUser.name || "there"}</span>
+                            <button className="nav-signin" onClick={onSignOut} type="button">Sign out</button>
+                        </>
+                    ) : (
+                        <>
+                            <button className="nav-login" onClick={onLogin} type="button">Sign in</button>
+                            <button className="nav-signin" onClick={onSignup} type="button">Join MovieHouse <span aria-hidden="true">↗</span></button>
+                        </>
+                    )}
+                </div>
             </div>
-
         </nav>
     );
 };

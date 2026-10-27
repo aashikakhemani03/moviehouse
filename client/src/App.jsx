@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import MovieList from "./components/MovieList";
 import BookingModal from "./components/BookingModal";
+import AuthModal from "./components/AuthModal";
 
 import socket from "./services/socket";
 
@@ -19,6 +20,16 @@ function App() {
 
     const [showBookingModal, setShowBookingModal] =
         useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [authMode, setAuthMode] = useState("login");
+    const [toast, setToast] = useState("");
+    const [currentUser, setCurrentUser] = useState(() => {
+        try {
+            return JSON.parse(sessionStorage.getItem("moviehouse.user")) ?? null;
+        } catch {
+            return null;
+        }
+    });
 
     const movies = useSelector(
         (state) => state.movies.movies
@@ -36,16 +47,19 @@ function App() {
         (state) => state.movies.selectedMovie
     );
 
-    const filteredMovies = movies.filter((movie) =>
-        movie.title
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase())
-    );
+    const featuredMovie = movies.find((movie) => movie.id === 5) ?? movies[0];
 
     // Set page title
     useEffect(() => {
         document.title = "MovieHouse - Movie Ticket Booking";
     }, []);
+
+    useEffect(() => {
+        if (!toast) return undefined;
+
+        const timer = window.setTimeout(() => setToast(""), 4200);
+        return () => window.clearTimeout(timer);
+    }, [toast]);
 
     // Socket.IO connection and real-time booking updates
     useEffect(() => {
@@ -96,27 +110,48 @@ function App() {
         setShowBookingModal(false);
     };
 
-    // Temporary test for Experiment 8
-    const testBooking = () => {
-        const bookingData = {
-            movie: "Interstellar",
-            seats: ["A1", "A2"],
-            user: "Test User"
-        };
+    const openAuth = (mode) => {
+        setAuthMode(mode);
+        setShowAuthModal(true);
+    };
 
-        socket.emit("movieBooked", bookingData);
+    const handleAuthenticated = (result) => {
+        if (result.token) sessionStorage.setItem("moviehouse.token", result.token);
+        if (result.user) sessionStorage.setItem("moviehouse.user", JSON.stringify(result.user));
+        setCurrentUser(result.user ?? null);
+        setShowAuthModal(false);
+        setToast(`Welcome${result.user?.name ? `, ${result.user.name}` : " back"}.`);
+    };
+
+    const handleSignOut = () => {
+        sessionStorage.removeItem("moviehouse.token");
+        sessionStorage.removeItem("moviehouse.user");
+        setCurrentUser(null);
+        setToast("You have signed out.");
+    };
+
+    const handleBookingConfirmed = (booking) => {
+        socket.emit("movieBooked", {
+            ...booking,
+            user: currentUser?.name || "Guest"
+        });
+        setToast(`${booking.movie} · ${booking.date} selected.`);
     };
 
     return (
-        <div className="min-h-screen bg-slate-950">
-
-            <Navbar />
+        <div className="app-shell">
+            <Navbar
+                currentUser={currentUser}
+                onLogin={() => openAuth("login")}
+                onSignup={() => openAuth("signup")}
+                onSignOut={handleSignOut}
+            />
 
             <main>
-                <Hero />
+                <Hero featuredMovie={featuredMovie} onBook={handleBook} />
 
                 <MovieList
-                    movies={filteredMovies}
+                    movies={movies}
                     onBook={handleBook}
                     searchQuery={searchQuery}
                     setSearchQuery={handleSearch}
@@ -125,42 +160,41 @@ function App() {
 
                 <section
                     id="theatres"
-                    className="bg-slate-900 px-6 py-20"
+                    className="theatre-section"
                 >
-                    <div className="mx-auto max-w-7xl text-center">
-
-                        <p className="font-semibold uppercase tracking-widest text-red-500">
-                            Find a Theatre
-                        </p>
-
-                        <h2 className="mt-2 text-4xl font-bold">
-                            Watch movies near you
-                        </h2>
-
-                        <p className="mx-auto mt-4 max-w-2xl text-gray-400">
-                            Choose your theatre, show time and
-                            seats to complete your booking.
-                        </p>
-
+                    <div className="theatre-inner">
+                        <div>
+                            <p className="eyebrow">A better kind of night out</p>
+                            <h2>Make room for the big screen.</h2>
+                            <p>Choose your theatre, find a showtime, and settle in. Your next favorite scene is closer than you think.</p>
+                        </div>
+                        <a href="#movies" className="theatre-link">Explore what’s showing <span aria-hidden="true">↗</span></a>
                     </div>
                 </section>
             </main>
 
-            {/* Temporary Experiment 8 test button */}
-            <div className="bg-slate-950 px-6 py-6 text-center">
-                <button
-                    type="button"
-                    onClick={testBooking}
-                    className="rounded-lg bg-red-600 px-6 py-3 font-semibold text-white transition hover:bg-red-700"
-                >
-                    Test Real-Time Booking
-                </button>
-            </div>
+            <footer className="site-footer">
+                <a className="brand-lockup" href="#home">Movie<span>House</span></a>
+                <p>Made for the love of the big screen.</p>
+                <a href="#home">Back to top ↑</a>
+            </footer>
+
+            {toast && <div className="toast-message" role="status">{toast}</div>}
 
             {showBookingModal && selectedMovie && (
                 <BookingModal
                     movie={selectedMovie}
                     onClose={closeModal}
+                    onConfirmed={handleBookingConfirmed}
+                />
+            )}
+
+            {showAuthModal && (
+                <AuthModal
+                    initialMode={authMode}
+                    backdropImage={featuredMovie?.image}
+                    onClose={() => setShowAuthModal(false)}
+                    onAuthenticated={handleAuthenticated}
                 />
             )}
 
