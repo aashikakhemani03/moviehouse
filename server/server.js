@@ -40,11 +40,6 @@ const io = new Server(server, {
 });
 
 // ===============================
-// DATABASE
-// ===============================
-connectDB();
-
-// ===============================
 // SECURITY
 // ===============================
 app.use(helmet());
@@ -131,6 +126,19 @@ app.use((err, req, res, next) => {
 // ===============================
 const PORT = process.env.PORT || 5001;
 
-server.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+const startServer = async () => {
+    try {
+        await connectDB();
+        server.listen(PORT, () => {
+            console.log(`Server running on http://localhost:${PORT}`);
+        });
+    } catch (error) {
+        console.error(
+            "Server startup failed: MongoDB connection could not be established.",
+            error.name
+        );
+        process.exit(1);
+    }
+};
+
+startServer();
